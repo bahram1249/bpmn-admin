@@ -4,7 +4,8 @@ import { fetchJson, toDeepQuery } from "../../lib/api";
 import { LookupModal } from "../ui/LookupModal";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
-import { Plus, Pencil, Trash2, Check, X, List } from "lucide-react";
+import { BadgeWithIcon } from "../base/badges/badges";
+import { Plus, Pencil, Trash2, Check, X, List, Square, Zap, GitBranch, Monitor } from "lucide-react";
 import { NodesPanel } from "./NodesPanel";
 import { InboundActionsPanel } from "./InboundActionsPanel";
 import { OutboundActionsPanel } from "./OutboundActionsPanel";
@@ -59,6 +60,22 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50, variant = 'p
   const [nodesActivity, setNodesActivity] = useState<ActivityItem | null>(null);
   const [inboundActivity, setInboundActivity] = useState<ActivityItem | null>(null);
   const [outboundActivity, setOutboundActivity] = useState<ActivityItem | null>(null);
+
+  // Map activity type id/name to badge metadata (label, color, icon)
+  const activityTypeMeta = (id?: number, name?: string): { label: string; color: any; Icon: any } => {
+    switch (id) {
+      case 1:
+        return { label: 'SIMPLE_STATE', color: 'blue', Icon: Square };
+      case 2:
+        return { label: 'EVENT_STATE', color: 'orange', Icon: Zap };
+      case 3:
+        return { label: 'SUBPROCESS_STATE', color: 'indigo', Icon: GitBranch };
+      case 4:
+        return { label: 'CLIENT_STATE', color: 'gray-blue', Icon: Monitor };
+      default:
+        return { label: (name || String(id ?? '')), color: 'gray', Icon: Square };
+    }
+  };
 
   const queryObj = useMemo(() => ({
     limit: pageSize,
@@ -241,7 +258,14 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50, variant = 'p
           { key: "id", header: "ID", width: 80, sortable: true },
           { key: "name", header: "Name", sortable: true },
           { key: "process", header: "Process", render: (r: any) => r.process?.name ?? r.processId },
-          { key: "activityType", header: "Type", render: (r: any) => r.activityType?.name ?? r.activityTypeId },
+          { key: "activityType", header: "Type", render: (r: any) => {
+              const meta = activityTypeMeta(r.activityTypeId, r.activityType?.name);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: "isStartActivity", header: "Start", render: (r: any) => (r.isStartActivity ? "Yes" : "No") },
           { key: "isEndActivity", header: "End", render: (r: any) => (r.isEndActivity ? "Yes" : "No") },
           { key: "haveMultipleItems", header: "Multiple", render: (r: any) => (r.haveMultipleItems ? "Yes" : "No") },

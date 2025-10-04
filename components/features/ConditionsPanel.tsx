@@ -4,7 +4,8 @@ import { fetchJson, toDeepQuery } from "../../lib/api";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
 import { LookupModal } from "../ui/LookupModal";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { BadgeWithIcon } from "../base/badges/badges";
+import { Plus, Pencil, Trash2, Check, X, Database, FileCode } from "lucide-react";
 
 export interface ConditionItem {
   id: number;
@@ -43,6 +44,18 @@ export function ConditionsPanel({ variant = "page", showToolbar = true, classNam
 
   const [showCreate, setShowCreate] = useState(false);
   const [editItem, setEditItem] = useState<ConditionItem | null>(null);
+
+  // Map condition type id/name to badge metadata (label, color, icon)
+  const conditionTypeMeta = (id?: number, name?: string): { label: string; color: any; Icon: any } => {
+    switch (id) {
+      case 1:
+        return { label: 'SQL_CONDITION', color: 'indigo', Icon: Database };
+      case 2:
+        return { label: 'SOURCE_CONDITION', color: 'blue', Icon: FileCode };
+      default:
+        return { label: (name || String(id ?? '')), color: 'gray', Icon: FileCode };
+    }
+  };
 
   async function load() {
     setLoading(true);
@@ -153,7 +166,14 @@ export function ConditionsPanel({ variant = "page", showToolbar = true, classNam
         columns={[
           { key: 'id', header: 'ID', width: 80, sortable: true },
           { key: 'name', header: 'Name', sortable: true },
-          { key: 'conditionType', header: 'Type', render: (r: any) => r.conditionType?.name ?? r.conditionTypeId },
+          { key: 'conditionType', header: 'Type', render: (r: any) => {
+              const meta = conditionTypeMeta(r.conditionTypeId, r.conditionType?.name);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: 'conditionSource', header: 'Source' },
           { key: 'conditionText', header: 'Text' },
           {

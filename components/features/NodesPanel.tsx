@@ -4,9 +4,10 @@ import { fetchJson, toDeepQuery } from "../../lib/api";
 import { LookupModal } from "../ui/LookupModal";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
+import { BadgeWithIcon } from "../base/badges/badges";
 import { NodeConditionsPanel } from "./NodeConditionsPanel";
 import { NodeCommandsPanel } from "./NodeCommandsPanel";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ArrowRight, Shield, Building2, User } from "lucide-react";
 
 export interface NodeItem {
   id: number;
@@ -64,6 +65,22 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50, variant = 'p
   const [editItem, setEditItem] = useState<NodeItem | null>(null);
   const [conditionsNode, setConditionsNode] = useState<NodeItem | null>(null);
   const [commandsNode, setCommandsNode] = useState<NodeItem | null>(null);
+
+  // Map referral type id/name to badge metadata (label, color, icon)
+  const referralTypeMeta = (id?: number, name?: string): { label: string; color: any; Icon: any } => {
+    switch (id) {
+      case 1:
+        return { label: 'DIRECT', color: 'blue', Icon: ArrowRight };
+      case 2:
+        return { label: 'ROLE', color: 'purple', Icon: Shield };
+      case 3:
+        return { label: 'SAME_ORGANIZATION_ROLE', color: 'gray-blue', Icon: Building2 };
+      case 4:
+        return { label: 'REQUESTOWNER', color: 'success', Icon: User };
+      default:
+        return { label: (name || String(id ?? '')), color: 'gray', Icon: ArrowRight };
+    }
+  };
 
   const queryObj = useMemo(() => ({
     limit: pageSize,
@@ -205,7 +222,14 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50, variant = 'p
           { key: "id", header: "ID", width: 80, sortable: true },
           { key: "fromActivity", header: "From", render: (r: any) => r.fromActivity?.name ?? r.fromActivityId },
           { key: "toActivity", header: "To", render: (r: any) => r.toActivity?.name ?? r.toActivityId },
-          { key: "referralType", header: "Referral", render: (r: any) => r.referralType?.name ?? r.referralTypeId },
+          { key: "referralType", header: "Referral", render: (r: any) => {
+              const meta = referralTypeMeta(r.referralTypeId, r.referralType?.name);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: "autoIterate", header: "Auto", render: (r: any) => (r.autoIterate ? "Yes" : "No") },
           { key: "name", header: "Name", sortable: true },
           {
