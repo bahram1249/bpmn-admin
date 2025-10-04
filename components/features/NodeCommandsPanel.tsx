@@ -18,9 +18,12 @@ export interface NodeCommandItem {
 export type NodeCommandsPanelProps = {
   fixedNodeId: number;
   modalZIndex?: number;
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean;
+  className?: string;
 };
 
-export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommandsPanelProps) {
+export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: NodeCommandsPanelProps) {
   const [items, setItems] = useState<NodeCommandItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -129,12 +132,16 @@ export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommand
     load();
   }, [page, orderBy, sortOrder, pageSize, fixedNodeId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Add command</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Add command</Button>
+        </div>
+      )}
 
       <LookupModal
         title="Select Command Type"
@@ -185,7 +192,7 @@ export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommand
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {(showCreate || editItem) && (

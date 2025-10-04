@@ -18,9 +18,12 @@ export interface InboundActionItem {
 export type InboundActionsPanelProps = {
   fixedActivityId?: number;
   modalZIndex?: number;
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean;
+  className?: string;
 };
 
-export function InboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: InboundActionsPanelProps) {
+export function InboundActionsPanel({ fixedActivityId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: InboundActionsPanelProps) {
   const [items, setItems] = useState<InboundActionItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -125,12 +128,16 @@ export function InboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Inbou
     load();
   }, [page, orderBy, sortOrder, pageSize, fixedActivityId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create inbound</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create inbound</Button>
+        </div>
+      )}
 
       <LookupModal
         title="Select Action"
@@ -180,7 +187,7 @@ export function InboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Inbou
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {(showCreate || editItem) && (

@@ -18,9 +18,12 @@ export interface OutboundActionItem {
 export type OutboundActionsPanelProps = {
   fixedActivityId?: number;
   modalZIndex?: number;
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean;
+  className?: string;
 };
 
-export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: OutboundActionsPanelProps) {
+export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: OutboundActionsPanelProps) {
   const [items, setItems] = useState<OutboundActionItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -125,12 +128,16 @@ export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Outb
     load();
   }, [page, orderBy, sortOrder, pageSize, fixedActivityId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create outbound</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create outbound</Button>
+        </div>
+      )}
 
       <LookupModal
         title="Select Action"
@@ -180,7 +187,7 @@ export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Outb
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {(showCreate || editItem) && (

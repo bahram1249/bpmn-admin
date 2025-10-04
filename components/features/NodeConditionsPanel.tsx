@@ -17,9 +17,12 @@ export interface NodeConditionItem {
 export type NodeConditionsPanelProps = {
   fixedNodeId: number;
   modalZIndex?: number;
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean;
+  className?: string;
 };
 
-export function NodeConditionsPanel({ fixedNodeId, modalZIndex = 50 }: NodeConditionsPanelProps) {
+export function NodeConditionsPanel({ fixedNodeId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: NodeConditionsPanelProps) {
   const [items, setItems] = useState<NodeConditionItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -123,12 +126,16 @@ export function NodeConditionsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCondi
     load();
   }, [page, orderBy, sortOrder, pageSize, fixedNodeId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Add condition</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Add condition</Button>
+        </div>
+      )}
 
       <LookupModal
         title="Select Condition"
@@ -177,7 +184,7 @@ export function NodeConditionsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCondi
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {(showCreate || editItem) && (

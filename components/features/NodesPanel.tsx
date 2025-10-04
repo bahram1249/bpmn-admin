@@ -31,9 +31,12 @@ export interface NodeItem {
 export type NodesPanelProps = {
   fixedFromActivityId?: number;
   modalZIndex?: number;
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean;
+  className?: string;
 };
 
-export function NodesPanel({ fixedFromActivityId, modalZIndex = 50 }: NodesPanelProps) {
+export function NodesPanel({ fixedFromActivityId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: NodesPanelProps) {
   const [items, setItems] = useState<NodeItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -158,12 +161,16 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50 }: NodesPanel
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, orderBy, sortOrder, pageSize, fixedFromActivityId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create node</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create node</Button>
+        </div>
+      )}
 
       {/* Lookups */}
       {!fixedFromActivityId && (
@@ -262,7 +269,7 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50 }: NodesPanel
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {conditionsNode && (
@@ -275,7 +282,7 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50 }: NodesPanel
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <NodeConditionsPanel fixedNodeId={conditionsNode.id} modalZIndex={(modalZIndex || 50) + 20} />
+              <NodeConditionsPanel fixedNodeId={conditionsNode.id} modalZIndex={(modalZIndex || 50) + 20} variant="modal" />
             </div>
           </div>
         </div>
@@ -291,7 +298,7 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50 }: NodesPanel
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <NodeCommandsPanel fixedNodeId={commandsNode.id} modalZIndex={(modalZIndex || 50) + 20} />
+              <NodeCommandsPanel fixedNodeId={commandsNode.id} modalZIndex={(modalZIndex || 50) + 20} variant="modal" />
             </div>
           </div>
         </div>

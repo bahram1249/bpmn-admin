@@ -25,9 +25,12 @@ export interface ActivityItem {
 export type ActivitiesPanelProps = {
   fixedProcessId?: number;
   modalZIndex?: number; // z-index for inner create/edit overlay when embedded
+  variant?: 'page' | 'modal';
+  showToolbar?: boolean; // show the top action bar (e.g., Create)
+  className?: string; // append classes to root container
 };
 
-export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: ActivitiesPanelProps) {
+export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50, variant = 'page', showToolbar = true, className = '' }: ActivitiesPanelProps) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -158,12 +161,16 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, orderBy, sortOrder, pageSize, fixedProcessId]);
 
+  const toolbarStyle = { marginBottom: variant === 'modal' ? 8 : 12 } as const;
+
   return (
-    <div className="space-y-3">
+    <div className={"space-y-3 " + (className || '')}>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create activity</Button>
-      </div>
+      {showToolbar && (
+        <div className="container" style={toolbarStyle}>
+          <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create activity</Button>
+        </div>
+      )}
 
       {/* Lookups */}
       {!fixedProcessId && (
@@ -193,7 +200,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <InboundActionsPanel fixedActivityId={inboundActivity.id} modalZIndex={(modalZIndex || 50) + 20} />
+              <InboundActionsPanel fixedActivityId={inboundActivity.id} modalZIndex={(modalZIndex || 50) + 20} variant="modal" />
             </div>
           </div>
         </div>
@@ -209,7 +216,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <OutboundActionsPanel fixedActivityId={outboundActivity.id} modalZIndex={(modalZIndex || 50) + 20} />
+              <OutboundActionsPanel fixedActivityId={outboundActivity.id} modalZIndex={(modalZIndex || 50) + 20} variant="modal" />
             </div>
           </div>
         </div>
@@ -308,7 +315,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+        onPageSizeChange={variant === 'page' ? ((s) => { setPageSize(s); setPage(0); }) : undefined}
       />
 
       {nodesActivity && (
@@ -321,7 +328,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <NodesPanel fixedFromActivityId={nodesActivity.id} modalZIndex={(modalZIndex || 50) + 20} />
+              <NodesPanel fixedFromActivityId={nodesActivity.id} modalZIndex={(modalZIndex || 50) + 20} variant="modal" />
             </div>
           </div>
         </div>
