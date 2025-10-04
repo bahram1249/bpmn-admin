@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react';
 import { fetchJson, toDeepQuery } from '../../lib/api';
 import { LookupModal } from '../../components/ui/LookupModal';
+import { UntitledTable } from '../../components/ui/UntitledTable';
+import { Button } from '../../components/ui/Button';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 interface RequestItem {
   id: number;
@@ -19,6 +22,11 @@ export default function RequestsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [orderBy, setOrderBy] = useState<string>('id');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
   const [userId, setUserId] = useState<number | ''>('');
   const [userName, setUserName] = useState('');
   const [processId, setProcessId] = useState<number | ''>('');
@@ -31,11 +39,14 @@ export default function RequestsPage() {
   const [showProcessLookup, setShowProcessLookup] = useState(false);
   const [showOrganizationLookup, setShowOrganizationLookup] = useState(false);
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [editItem, setEditItem] = useState<RequestItem | null>(null);
+
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const q = toDeepQuery({ limit: 25, offset: 0, orderBy: 'id', sortOrder: 'DESC' });
+      const q = toDeepQuery({ limit: pageSize, offset: page * pageSize, orderBy, sortOrder });
       const res = await fetchJson<{ result: RequestItem[]; total: number }>(`/api/bpmn/requests${q}`);
       setItems(res.result);
       setTotal(res.total);
@@ -59,6 +70,7 @@ export default function RequestsPage() {
           description: description || undefined,
         },
       });
+      setShowCreate(false);
       setUserId('');
       setUserName('');
       setProcessId('');
@@ -103,34 +115,14 @@ export default function RequestsPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [page, orderBy, sortOrder]);
 
   return (
     <div>
       <h1>Requests</h1>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12, flexWrap: 'wrap' as const, gap: 8 }}>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowUserLookup(true)}>Pick User</button>
-          <span className="text-sm text-gray-600">{userName || (userId ? `ID: ${userId}` : 'None')}</span>
-        </div>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowProcessLookup(true)}>Pick Process</button>
-          <span className="text-sm text-gray-600">{processName || (processId ? `ID: ${processId}` : 'None')}</span>
-        </div>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowOrganizationLookup(true)}>Pick Organization</button>
-          <span className="text-sm text-gray-600">{organizationName || (organizationId ? `ID: ${organizationId}` : 'None')}</span>
-        </div>
-        <input
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{ width: 260 }}
-        />
-        <button onClick={create} disabled={loading || !userId || !processId}>
-          Create
-        </button>
+      <div className="container" style={{ marginBottom: 12 }}>
+        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create request</Button>
       </div>
 
       <LookupModal
@@ -166,37 +158,101 @@ export default function RequestsPage() {
         onSelect={(row: any) => { setOrganizationId(row.id); setOrganizationName(row.name); }}
       />
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>User</th>
-            <th>Process</th>
-            <th>Organization</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p) => (
-            <tr key={p.id}>
-              <td>{p.id}</td>
-              <td>{p.user?.username ?? `${(p.user as any)?.firstname ?? ''} ${(p.user as any)?.lastname ?? ''}`.trim() || p.userId}</td>
-              <td>{p.process?.name ?? p.processId}</td>
-              <td>{p.organization?.name ?? p.organizationId ?? ''}</td>
-              <td>
-                <div className="container" style={{ gap: 6 }}>
-                  <button
-                    onClick={() => update(p.id, { userId: userId === '' ? p.userId : Number(userId), processId: processId === '' ? p.processId : Number(processId), organizationId: organizationId === '' ? p.organizationId : Number(organizationId) })}
-                    disabled={loading}
-                  >Save</button>
-                  <button onClick={() => remove(p.id)} disabled={loading}>Delete</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 8 }}>Total: {total}</div>
+      <UntitledTable
+        columns={[
+          { key: 'id', header: 'ID', width: 80, sortable: true },
+          { key: 'user', header: 'User', render: (r: any) => ((r.user?.username ?? `${r.user?.firstname ?? ''} ${r.user?.lastname ?? ''}`.trim()) || (r.userId ?? '')) },
+          { key: 'process', header: 'Process', render: (r: any) => r.process?.name ?? r.processId },
+          { key: 'organization', header: 'Organization', render: (r: any) => r.organization?.name ?? r.organizationId ?? '' },
+          {
+            key: '__actions__',
+            header: '',
+            align: 'right',
+            render: (p: any) => (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  aria-label="Edit"
+                  title="Edit"
+                  iconOnly
+                  variant="secondary"
+                  onClick={() => {
+                    setEditItem(p);
+                    setUserId(p.userId);
+                    setUserName(p.user?.username ?? '');
+                    setProcessId(p.processId);
+                    setProcessName(p.process?.name ?? '');
+                    setOrganizationId(p.organizationId ?? '');
+                    setOrganizationName(p.organization?.name ?? '');
+                    setDescription('');
+                  }}
+                >
+                  <Pencil size={16} />
+                </Button>
+                <Button aria-label="Delete" title="Delete" iconOnly variant="danger" onClick={() => remove(p.id)}>
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        data={items}
+        loading={loading}
+        orderBy={orderBy}
+        sortOrder={sortOrder}
+        onSortChange={(ob, so) => { setOrderBy(ob); setSortOrder(so); setPage(0); }}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(p) => setPage(p)}
+      />
+
+      {(showCreate || editItem) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-[min(900px,96vw)] p-4 space-y-3">
+            <h3 className="text-lg font-semibold">{editItem ? `Edit Request #${editItem.id}` : 'Create Request'}</h3>
+            <div className="container" style={{ gap: 8, flexWrap: 'wrap' as const }}>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowUserLookup(true)}>Pick User</Button>
+                <span className="text-sm text-gray-600">{userName || (userId ? `ID: ${userId}` : 'None')}</span>
+              </div>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowProcessLookup(true)}>Pick Process</Button>
+                <span className="text-sm text-gray-600">{processName || (processId ? `ID: ${processId}` : 'None')}</span>
+              </div>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowOrganizationLookup(true)}>Pick Organization</Button>
+                <span className="text-sm text-gray-600">{organizationName || (organizationId ? `ID: ${organizationId}` : 'None')}</span>
+              </div>
+              <input
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
+                style={{ width: 300 }}
+              />
+            </div>
+            <div className="container" style={{ gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" leftIcon={<X size={16} />} onClick={() => { setShowCreate(false); setEditItem(null); }}>Cancel</Button>
+              {editItem ? (
+                <Button
+                  variant="primary"
+                  leftIcon={<Check size={16} />}
+                  onClick={() => update(editItem.id, {
+                    userId: userId === '' ? undefined : Number(userId),
+                    processId: processId === '' ? undefined : Number(processId),
+                    organizationId: organizationId === '' ? undefined : Number(organizationId),
+                  })}
+                  disabled={loading || !userId || !processId}
+                >
+                  Save
+                </Button>
+              ) : (
+                <Button variant="primary" leftIcon={<Plus size={16} />} onClick={create} disabled={loading || !userId || !processId}>Create</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react';
 import { fetchJson, toDeepQuery } from '../../lib/api';
 import { LookupModal } from '../../components/ui/LookupModal';
+import { UntitledTable } from '../../components/ui/UntitledTable';
+import { Button } from '../../components/ui/Button';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 interface ActivityItem {
   id: number;
@@ -22,6 +25,11 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [orderBy, setOrderBy] = useState<string>('id');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
   const [name, setName] = useState('');
   const [isStart, setIsStart] = useState(false);
   const [isEnd, setIsEnd] = useState(false);
@@ -35,11 +43,14 @@ export default function ActivitiesPage() {
   const [showProcessLookup, setShowProcessLookup] = useState(false);
   const [showActivityTypeLookup, setShowActivityTypeLookup] = useState(false);
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [editItem, setEditItem] = useState<ActivityItem | null>(null);
+
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const q = toDeepQuery({ limit: 25, offset: 0, orderBy: 'id', sortOrder: 'DESC' });
+      const q = toDeepQuery({ limit: pageSize, offset: page * pageSize, orderBy, sortOrder });
       const res = await fetchJson<{ result: ActivityItem[]; total: number }>(`/api/bpmn/activities${q}`);
       setItems(res.result);
       setTotal(res.total);
@@ -66,6 +77,7 @@ export default function ActivitiesPage() {
           insideProcessRunnerId: insideProcessRunnerId === '' ? undefined : Number(insideProcessRunnerId),
         },
       });
+      setShowCreate(false);
       setName('');
       setIsStart(false);
       setIsEnd(false);
@@ -83,52 +95,55 @@ export default function ActivitiesPage() {
     }
   }
 
+  async function update(id: number) {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/bpmn/activities/${id}`, {
+        method: 'PUT',
+        body: {
+          name,
+          isStartActivity: isStart,
+          isEndActivity: isEnd,
+          activityTypeId: activityTypeId === '' ? undefined : Number(activityTypeId),
+          processId: processId === '' ? undefined : Number(processId),
+          haveMultipleItems,
+          insideProcessRunnerId: insideProcessRunnerId === '' ? undefined : Number(insideProcessRunnerId),
+        },
+      });
+      setEditItem(null);
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!confirm('Delete this activity?')) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/bpmn/activities/${id}`, { method: 'DELETE' });
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
-  }, []);
+  }, [page, orderBy, sortOrder]);
 
   return (
     <div>
       <h1>Activities</h1>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12, flexWrap: 'wrap' as const, gap: 8 }}>
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowActivityTypeLookup(true)}>Pick Activity Type</button>
-          <span className="text-sm text-gray-600">{activityTypeName || (activityTypeId ? `ID: ${activityTypeId}` : 'None')}</span>
-        </div>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowProcessLookup(true)}>Pick Process</button>
-          <span className="text-sm text-gray-600">{processName || (processId ? `ID: ${processId}` : 'None')}</span>
-        </div>
-        <label className="container" style={{ gap: 6 }}>
-          <input type="checkbox" checked={isStart} onChange={(e) => setIsStart(e.target.checked)} />
-          <span>Start</span>
-        </label>
-        <label className="container" style={{ gap: 6 }}>
-          <input type="checkbox" checked={isEnd} onChange={(e) => setIsEnd(e.target.checked)} />
-          <span>End</span>
-        </label>
-        <label className="container" style={{ gap: 6 }}>
-          <input
-            type="checkbox"
-            checked={haveMultipleItems}
-            onChange={(e) => setHaveMultipleItems(e.target.checked)}
-          />
-          <span>Multiple Items</span>
-        </label>
-        <input
-          placeholder="Inside Process Runner ID"
-          type="number"
-          value={insideProcessRunnerId}
-          onChange={(e) =>
-            setInsideProcessRunnerId(e.target.value === '' ? '' : Number(e.target.value))
-          }
-          style={{ width: 210 }}
-        />
-        <button onClick={create} disabled={loading || !name || !processId || !activityTypeId}>
-          Create
-        </button>
+      <div className="container" style={{ marginBottom: 12 }}>
+        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create activity</Button>
       </div>
 
       <LookupModal
@@ -160,33 +175,116 @@ export default function ActivitiesPage() {
         }}
       />
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Process</th>
-            <th>Type</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Multiple</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p) => (
-            <tr key={p.id}>
-              <td>{p.id}</td>
-              <td>{p.name}</td>
-              <td>{p.process?.name ?? p.processId}</td>
-              <td>{p.activityType?.name ?? p.activityTypeId}</td>
-              <td>{p.isStartActivity ? 'Yes' : 'No'}</td>
-              <td>{p.isEndActivity ? 'Yes' : 'No'}</td>
-              <td>{p.haveMultipleItems ? 'Yes' : 'No'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 8 }}>Total: {total}</div>
+      <UntitledTable
+        columns={[
+          { key: 'id', header: 'ID', width: 80, sortable: true },
+          { key: 'name', header: 'Name', sortable: true },
+          { key: 'process', header: 'Process', render: (r: any) => r.process?.name ?? r.processId },
+          { key: 'activityType', header: 'Type', render: (r: any) => r.activityType?.name ?? r.activityTypeId },
+          { key: 'isStartActivity', header: 'Start', render: (r: any) => (r.isStartActivity ? 'Yes' : 'No') },
+          { key: 'isEndActivity', header: 'End', render: (r: any) => (r.isEndActivity ? 'Yes' : 'No') },
+          { key: 'haveMultipleItems', header: 'Multiple', render: (r: any) => (r.haveMultipleItems ? 'Yes' : 'No') },
+          {
+            key: '__actions__',
+            header: '',
+            align: 'right',
+            render: (p: any) => (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  aria-label="Edit"
+                  title="Edit"
+                  iconOnly
+                  variant="secondary"
+                  onClick={() => {
+                    setEditItem(p);
+                    setName(p.name);
+                    setIsStart(p.isStartActivity);
+                    setIsEnd(p.isEndActivity);
+                    setActivityTypeId(p.activityTypeId);
+                    setActivityTypeName(p.activityType?.name ?? '');
+                    setProcessId(p.processId);
+                    setProcessName(p.process?.name ?? '');
+                    setHaveMultipleItems(p.haveMultipleItems);
+                    setInsideProcessRunnerId(p.insideProcessRunnerId ?? '');
+                  }}
+                >
+                  <Pencil size={16} />
+                </Button>
+                <Button
+                  aria-label="Delete"
+                  title="Delete"
+                  iconOnly
+                  variant="danger"
+                  onClick={() => remove(p.id)}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        data={items}
+        loading={loading}
+        orderBy={orderBy}
+        sortOrder={sortOrder}
+        onSortChange={(ob, so) => { setOrderBy(ob); setSortOrder(so); setPage(0); }}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(p) => setPage(p)}
+      />
+
+      {(showCreate || editItem) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-[min(900px,96vw)] p-4 space-y-3">
+            <h3 className="text-lg font-semibold">{editItem ? `Edit Activity #${editItem.id}` : 'Create Activity'}</h3>
+            <div className="container" style={{ gap: 8, flexWrap: 'wrap' as const }}>
+              <input
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
+              />
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowActivityTypeLookup(true)}>Pick Activity Type</Button>
+                <span className="text-sm text-gray-600">{activityTypeName || (activityTypeId ? `ID: ${activityTypeId}` : 'None')}</span>
+              </div>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowProcessLookup(true)}>Pick Process</Button>
+                <span className="text-sm text-gray-600">{processName || (processId ? `ID: ${processId}` : 'None')}</span>
+              </div>
+              <label className="container" style={{ gap: 6 }}>
+                <input type="checkbox" checked={isStart} onChange={(e) => setIsStart(e.target.checked)} />
+                <span>Start</span>
+              </label>
+              <label className="container" style={{ gap: 6 }}>
+                <input type="checkbox" checked={isEnd} onChange={(e) => setIsEnd(e.target.checked)} />
+                <span>End</span>
+              </label>
+              <label className="container" style={{ gap: 6 }}>
+                <input type="checkbox" checked={haveMultipleItems} onChange={(e) => setHaveMultipleItems(e.target.checked)} />
+                <span>Multiple Items</span>
+              </label>
+              <input
+                placeholder="Inside Process Runner ID"
+                type="number"
+                value={insideProcessRunnerId}
+                onChange={(e) => setInsideProcessRunnerId(e.target.value === '' ? '' : Number(e.target.value))}
+                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
+                style={{ width: 210 }}
+              />
+            </div>
+            <div className="container" style={{ gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" leftIcon={<X size={16} />} onClick={() => { setShowCreate(false); setEditItem(null); }}>Cancel</Button>
+              {editItem ? (
+                <Button variant="primary" leftIcon={<Check size={16} />} onClick={() => update(editItem.id)} disabled={loading || !name || !processId || !activityTypeId}>Save</Button>
+              ) : (
+                <Button variant="primary" leftIcon={<Plus size={16} />} onClick={create} disabled={loading || !name || !processId || !activityTypeId}>Create</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

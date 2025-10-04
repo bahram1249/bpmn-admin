@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react';
 import { fetchJson, toDeepQuery } from '../../lib/api';
 import { LookupModal } from '../../components/ui/LookupModal';
+import { UntitledTable } from '../../components/ui/UntitledTable';
+import { Button } from '../../components/ui/Button';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 interface NodeItem {
   id: number;
@@ -29,6 +32,11 @@ export default function NodesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [orderBy, setOrderBy] = useState<'id' | 'name'>('id');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
   const [fromActivityId, setFromActivityId] = useState<number | ''>('');
   const [fromActivityName, setFromActivityName] = useState('');
   const [toActivityId, setToActivityId] = useState<number | ''>('');
@@ -42,11 +50,14 @@ export default function NodesPage() {
   const [showToActivityLookup, setShowToActivityLookup] = useState(false);
   const [showReferralTypeLookup, setShowReferralTypeLookup] = useState(false);
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [editItem, setEditItem] = useState<NodeItem | null>(null);
+
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const q = toDeepQuery({ limit: 25, offset: 0, orderBy: 'id', sortOrder: 'DESC' });
+      const q = toDeepQuery({ limit: pageSize, offset: page * pageSize, orderBy, sortOrder });
       const res = await fetchJson<{ result: NodeItem[]; total: number }>(`/api/bpmn/nodes${q}`);
       setItems(res.result);
       setTotal(res.total);
@@ -71,6 +82,7 @@ export default function NodesPage() {
           name: name || undefined,
         },
       });
+      setShowCreate(false);
       setFromActivityId('');
       setFromActivityName('');
       setToActivityId('');
@@ -87,35 +99,53 @@ export default function NodesPage() {
     }
   }
 
+  async function update(id: number) {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/bpmn/nodes/${id}`, {
+        method: 'PUT',
+        body: {
+          fromActivityId: fromActivityId === '' ? undefined : Number(fromActivityId),
+          toActivityId: toActivityId === '' ? undefined : Number(toActivityId),
+          referralTypeId: referralTypeId === '' ? undefined : Number(referralTypeId),
+          autoIterate,
+          name: name || undefined,
+        },
+      });
+      setEditItem(null);
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!confirm('Delete this node?')) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/bpmn/nodes/${id}`, { method: 'DELETE' });
+      await load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
-  }, []);
+  }, [page, orderBy, sortOrder]);
 
   return (
     <div>
       <h1>Nodes</h1>
       {error && <div className="alert">{error}</div>}
-      <div className="container" style={{ marginBottom: 12, flexWrap: 'wrap' as const, gap: 8 }}>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowFromActivityLookup(true)}>Pick From Activity</button>
-          <span className="text-sm text-gray-600">{fromActivityName || (fromActivityId ? `ID: ${fromActivityId}` : 'None')}</span>
-        </div>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowToActivityLookup(true)}>Pick To Activity</button>
-          <span className="text-sm text-gray-600">{toActivityName || (toActivityId ? `ID: ${toActivityId}` : 'None')}</span>
-        </div>
-        <div className="container" style={{ gap: 6 }}>
-          <button className="btn" onClick={() => setShowReferralTypeLookup(true)}>Pick Referral Type</button>
-          <span className="text-sm text-gray-600">{referralTypeName || (referralTypeId ? `ID: ${referralTypeId}` : 'None')}</span>
-        </div>
-        <label className="container" style={{ gap: 6 }}>
-          <input type="checkbox" checked={autoIterate} onChange={(e) => setAutoIterate(e.target.checked)} />
-          <span>Auto Iterate</span>
-        </label>
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <button onClick={create} disabled={loading || !fromActivityId || !toActivityId || !referralTypeId}>
-          Create
-        </button>
+      <div className="container" style={{ marginBottom: 12 }}>
+        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => setShowCreate(true)}>Create node</Button>
       </div>
 
       <LookupModal
@@ -143,31 +173,102 @@ export default function NodesPage() {
         onSelect={(row: any) => { setReferralTypeId(row.id); setReferralTypeName(row.name); }}
       />
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Referral</th>
-            <th>Auto</th>
-            <th>Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p) => (
-            <tr key={p.id}>
-              <td>{p.id}</td>
-              <td>{p.fromActivity?.name ?? p.fromActivityId}</td>
-              <td>{p.toActivity?.name ?? p.toActivityId}</td>
-              <td>{p.referralType?.name ?? p.referralTypeId}</td>
-              <td>{p.autoIterate ? 'Yes' : 'No'}</td>
-              <td>{p.name ?? ''}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 8 }}>Total: {total}</div>
+      <UntitledTable
+        columns={[
+          { key: 'id', header: 'ID', width: 80, sortable: true },
+          { key: 'fromActivity', header: 'From', render: (r: any) => r.fromActivity?.name ?? r.fromActivityId },
+          { key: 'toActivity', header: 'To', render: (r: any) => r.toActivity?.name ?? r.toActivityId },
+          { key: 'referralType', header: 'Referral', render: (r: any) => r.referralType?.name ?? r.referralTypeId },
+          { key: 'autoIterate', header: 'Auto', render: (r: any) => (r.autoIterate ? 'Yes' : 'No') },
+          { key: 'name', header: 'Name', sortable: true },
+          {
+            key: '__actions__',
+            header: '',
+            align: 'right',
+            render: (p: any) => (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  aria-label="Edit"
+                  title="Edit"
+                  iconOnly
+                  variant="secondary"
+                  onClick={() => {
+                    setEditItem(p);
+                    setFromActivityId(p.fromActivityId);
+                    setFromActivityName(p.fromActivity?.name ?? '');
+                    setToActivityId(p.toActivityId);
+                    setToActivityName(p.toActivity?.name ?? '');
+                    setReferralTypeId(p.referralTypeId);
+                    setReferralTypeName(p.referralType?.name ?? '');
+                    setAutoIterate(p.autoIterate);
+                    setName(p.name ?? '');
+                  }}
+                >
+                  <Pencil size={16} />
+                </Button>
+                <Button
+                  aria-label="Delete"
+                  title="Delete"
+                  iconOnly
+                  variant="danger"
+                  onClick={() => remove(p.id)}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        data={items}
+        loading={loading}
+        orderBy={orderBy}
+        sortOrder={sortOrder}
+        onSortChange={(ob, so) => { setOrderBy(ob as any); setSortOrder(so); setPage(0); }}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(p) => setPage(p)}
+      />
+
+      {(showCreate || editItem) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-[min(900px,96vw)] p-4 space-y-3">
+            <h3 className="text-lg font-semibold">{editItem ? `Edit Node #${editItem.id}` : 'Create Node'}</h3>
+            <div className="container" style={{ gap: 8, flexWrap: 'wrap' as const }}>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowFromActivityLookup(true)}>Pick From Activity</Button>
+                <span className="text-sm text-gray-600">{fromActivityName || (fromActivityId ? `ID: ${fromActivityId}` : 'None')}</span>
+              </div>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowToActivityLookup(true)}>Pick To Activity</Button>
+                <span className="text-sm text-gray-600">{toActivityName || (toActivityId ? `ID: ${toActivityId}` : 'None')}</span>
+              </div>
+              <div className="container" style={{ gap: 6 }}>
+                <Button variant="secondary" onClick={() => setShowReferralTypeLookup(true)}>Pick Referral Type</Button>
+                <span className="text-sm text-gray-600">{referralTypeName || (referralTypeId ? `ID: ${referralTypeId}` : 'None')}</span>
+              </div>
+              <label className="container" style={{ gap: 6 }}>
+                <input type="checkbox" checked={autoIterate} onChange={(e) => setAutoIterate(e.target.checked)} />
+                <span>Auto Iterate</span>
+              </label>
+              <input
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
+              />
+            </div>
+            <div className="container" style={{ gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" leftIcon={<X size={16} />} onClick={() => { setShowCreate(false); setEditItem(null); }}>Cancel</Button>
+              {editItem ? (
+                <Button variant="primary" leftIcon={<Check size={16} />} onClick={() => update(editItem.id)} disabled={loading || !fromActivityId || !toActivityId || !referralTypeId}>Save</Button>
+              ) : (
+                <Button variant="primary" leftIcon={<Plus size={16} />} onClick={create} disabled={loading || !fromActivityId || !toActivityId || !referralTypeId}>Create</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
