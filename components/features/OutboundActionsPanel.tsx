@@ -27,7 +27,7 @@ export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Outb
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const [orderBy, setOrderBy] = useState<string>("id");
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
 
@@ -123,7 +123,7 @@ export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Outb
 
   useEffect(() => {
     load();
-  }, [page, orderBy, sortOrder, fixedActivityId]);
+  }, [page, orderBy, sortOrder, pageSize, fixedActivityId]);
 
   return (
     <div className="space-y-3">
@@ -180,6 +180,7 @@ export function OutboundActionsPanel({ fixedActivityId, modalZIndex = 50 }: Outb
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
       />
 
       {(showCreate || editItem) && (

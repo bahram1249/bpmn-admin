@@ -23,7 +23,7 @@ export default function RequestsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const [orderBy, setOrderBy] = useState<string>('id');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
@@ -115,7 +115,7 @@ export default function RequestsPage() {
 
   useEffect(() => {
     load();
-  }, [page, orderBy, sortOrder]);
+  }, [page, orderBy, sortOrder, pageSize]);
 
   return (
     <div>
@@ -204,6 +204,7 @@ export default function RequestsPage() {
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
       />
 
       {(showCreate || editItem) && (

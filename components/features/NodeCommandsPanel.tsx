@@ -27,7 +27,7 @@ export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommand
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const [orderBy, setOrderBy] = useState<string>("id");
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
 
@@ -127,7 +127,7 @@ export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommand
 
   useEffect(() => {
     load();
-  }, [page, orderBy, sortOrder, fixedNodeId]);
+  }, [page, orderBy, sortOrder, pageSize, fixedNodeId]);
 
   return (
     <div className="space-y-3">
@@ -185,6 +185,7 @@ export function NodeCommandsPanel({ fixedNodeId, modalZIndex = 50 }: NodeCommand
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
       />
 
       {(showCreate || editItem) && (

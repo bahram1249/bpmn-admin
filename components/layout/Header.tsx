@@ -1,6 +1,5 @@
 "use client";
-import Link from 'next/link';
-import { ApiSettings } from '../ApiSettings';
+import Link from "next/link";
 
 export function Header() {
   return (
@@ -9,15 +8,8 @@ export function Header() {
         <Link href="/" className="text-xl font-semibold text-slate-800">
           BPMN Admin
         </Link>
-        <nav className="hidden md:flex items-center gap-4 text-sm text-slate-600">
-          <Link className="hover:text-slate-900" href="/processes">Processes</Link>
-          <Link className="hover:text-slate-900" href="/activities">Activities</Link>
-          <Link className="hover:text-slate-900" href="/nodes">Nodes</Link>
-          <Link className="hover:text-slate-900" href="/requests">Requests</Link>
-          <Link className="hover:text-slate-900" href="/request-states">Request States</Link>
-        </nav>
+        <nav className="hidden md:flex items-center gap-4 text-sm text-slate-600"></nav>
       </div>
-      <ApiSettings />
     </header>
   );
 }

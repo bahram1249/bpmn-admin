@@ -34,7 +34,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const [orderBy, setOrderBy] = useState<string>("id");
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
 
@@ -156,7 +156,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, orderBy, sortOrder, fixedProcessId]);
+  }, [page, orderBy, sortOrder, pageSize, fixedProcessId]);
 
   return (
     <div className="space-y-3">
@@ -308,6 +308,7 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50 }: Activities
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => setPage(p)}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
       />
 
       {nodesActivity && (

@@ -1,8 +1,20 @@
-import './globals.css';
-import { Header } from '../components/layout/Header';
-import { Sidebar } from '../components/layout/Sidebar';
+import "./globals.css";
+import { Header } from "../components/layout/Header";
+import { Sidebar } from "../components/layout/Sidebar";
+import type { Metadata } from "next";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: {
+    default: "BPMN Admin",
+    template: "%s - BPMN Admin",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className="bg-slate-50 text-slate-800">
@@ -10,9 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
 
         {/* Shell */}
-        <div className="mx-auto flex w-full max-w-[1400px] gap-4 px-4 py-4">
+        <div className="mx-auto flex w-full ">
           <Sidebar />
-          <main className="flex-1 rounded-xl bg-white p-4 shadow-sm">{children}</main>
+          <div className="flex-1 rounded-xl bg-white p-4 shadow-sm">
+            {children}
+          </div>
         </div>
       </body>
     </html>
