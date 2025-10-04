@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { fetchJson } from "../../lib/api";
+import { Checkbox } from "../base/checkbox/checkbox";
 
 export type ProcessGraphProps = {
   processId: number;
@@ -362,19 +363,11 @@ export function ProcessGraph({ processId, className }: ProcessGraphProps) {
   return (
     <div className={className}>
       {/* Toggles bar */}
-      <div className="flex items-center gap-3 mb-3">
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={showInbound} onChange={(e) => setShowInbound(e.target.checked)} /> Inbound
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={showOutbound} onChange={(e) => setShowOutbound(e.target.checked)} /> Outbound
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={showNodeConds} onChange={(e) => setShowNodeConds(e.target.checked)} /> Node Conditions
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={showNodeCmds} onChange={(e) => setShowNodeCmds(e.target.checked)} /> Node Commands
-        </label>
+      <div className="flex items-center gap-4 mb-3">
+        <Checkbox size="sm" isSelected={showInbound} onChange={setShowInbound} label="Inbound" />
+        <Checkbox size="sm" isSelected={showOutbound} onChange={setShowOutbound} label="Outbound" />
+        <Checkbox size="sm" isSelected={showNodeConds} onChange={setShowNodeConds} label="Node Conditions" />
+        <Checkbox size="sm" isSelected={showNodeCmds} onChange={setShowNodeCmds} label="Node Commands" />
       </div>
       <svg width={width} height={height} className="bg-gray-50 rounded-md ring-1 ring-gray-200">
         <defs>

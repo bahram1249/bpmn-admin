@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { fetchJson, toDeepQuery } from '../../lib/api';
 import { UntitledTable } from '../../components/ui/UntitledTable';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
+import { Input } from '../../components/ui/Input';
+import { Checkbox as UICheckbox } from '../../components/base/checkbox/checkbox';
 import { Plus, Pencil, Trash2, Check, X, List, GitBranch } from 'lucide-react';
 import { ActivitiesPanel } from '../../components/features/ActivitiesPanel';
 import { ProcessGraph } from '../../components/features/ProcessGraph';
@@ -173,72 +176,55 @@ export default function ProcessesPage() {
       />
 
       {activitiesProcess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-[min(1100px,96vw)] max-h-[95vh] p-4 space-y-3 flex flex-col">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Activities for {activitiesProcess.name} (#{activitiesProcess.id})</h3>
-              <Button aria-label="Close" iconOnly variant="ghost" onClick={() => setActivitiesProcess(null)}>
-                <X size={16} />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-auto">
-              <ActivitiesPanel fixedProcessId={activitiesProcess.id} modalZIndex={60} />
-            </div>
-          </div>
-        </div>
+        <Modal
+          isOpen={!!activitiesProcess}
+          onClose={() => setActivitiesProcess(null)}
+          title={`Activities for ${activitiesProcess.name} (#${activitiesProcess.id})`}
+          size="lg"
+          zIndexClass="z-[60]"
+        >
+          <ActivitiesPanel fixedProcessId={activitiesProcess.id} modalZIndex={60} />
+        </Modal>
       )}
 
       {graphProcess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-[min(1200px,96vw)] max-h-[95vh] p-4 space-y-3 flex flex-col">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Graph for {graphProcess.name} (#{graphProcess.id})</h3>
-              <Button aria-label="Close" iconOnly variant="ghost" onClick={() => setGraphProcess(null)}>
-                <X size={16} />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-auto">
-              <ProcessGraph processId={graphProcess.id} />
-            </div>
-          </div>
-        </div>
+        <Modal
+          isOpen={!!graphProcess}
+          onClose={() => setGraphProcess(null)}
+          title={`Graph for ${graphProcess.name} (#${graphProcess.id})`}
+          size="xl"
+        >
+          <ProcessGraph processId={graphProcess.id} />
+        </Modal>
       )}
 
       {(showCreate || editItem) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-[min(700px,96vw)] p-4 space-y-3">
-            <h3 className="text-lg font-semibold">{editItem ? `Edit Process #${editItem.id}` : 'Create Process'}</h3>
-            <div className="container" style={{ gap: 8, flexWrap: 'wrap' as const }}>
-              <input
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
-                style={{ width: 280 }}
-              />
-              <label className="container" style={{ gap: 6 }}>
-                <input type="checkbox" checked={isSubProcess} onChange={(e) => setIsSubProcess(e.target.checked)} />
-                <span>Is Sub-Process</span>
-              </label>
-              <input
-                placeholder="Static ID"
-                type="number"
-                value={staticId}
-                onChange={(e) => setStaticId(e.target.value === '' ? '' : Number(e.target.value))}
-                className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 outline-none"
-                style={{ width: 160 }}
-              />
-            </div>
-            <div className="container" style={{ gap: 8, justifyContent: 'flex-end' }}>
+        <Modal
+          isOpen={showCreate || !!editItem}
+          onClose={() => { setShowCreate(false); setEditItem(null); }}
+          title={editItem ? `Edit Process #${editItem.id}` : 'Create Process'}
+          size="md"
+          footer={
+            <>
               <Button variant="secondary" leftIcon={<X size={16} />} onClick={() => { setShowCreate(false); setEditItem(null); }}>Cancel</Button>
               {editItem ? (
                 <Button variant="primary" leftIcon={<Check size={16} />} onClick={() => update(editItem.id)} disabled={loading || !name}>Save</Button>
               ) : (
                 <Button variant="primary" leftIcon={<Plus size={16} />} onClick={create} disabled={loading || !name}>Create</Button>
               )}
+            </>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="Name" placeholder="Name" value={name} onChange={(e) => setName((e.target as HTMLInputElement).value)} fullWidth />
+            <Input label="Static ID" placeholder="Static ID" type="number" value={staticId}
+              onChange={(e) => setStaticId((e.target as HTMLInputElement).value === '' ? '' : Number((e.target as HTMLInputElement).value))}
+            />
+            <div className="col-span-1 sm:col-span-2">
+              <UICheckbox isSelected={isSubProcess} onChange={setIsSubProcess} label="Is Sub-Process" />
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { fetchJson, toDeepQuery } from "../../lib/api";
 import { UntitledTable, TableColumn } from "./UntitledTable";
 import { Button } from "./Button";
 import { X, Check } from "lucide-react";
+import { Input } from "./Input";
 
 export type LookupColumn<T> = TableColumn<T>;
 
@@ -80,11 +81,12 @@ export function LookupModal<T = any>({
           <Button aria-label="Close" iconOnly variant="ghost" onClick={onClose}><X size={16} /></Button>
         </div>
         <div className="px-4 py-3 flex gap-2 items-center border-b">
-          <input
+          <Input
+            label={null as any}
             placeholder="Search..."
             value={search}
-            onChange={(e) => { setPage(0); setSearch(e.target.value); }}
-            className="border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-md px-3 py-2 w-full outline-none"
+            onChange={(e) => { setPage(0); setSearch((e.target as HTMLInputElement).value); }}
+            fullWidth
           />
         </div>
         <div className="p-3 flex-1 overflow-auto">
