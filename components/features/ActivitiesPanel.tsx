@@ -5,7 +5,7 @@ import { LookupModal } from "../ui/LookupModal";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
 import { BadgeWithIcon } from "../base/badges/badges";
-import { Plus, Pencil, Trash2, Check, X, List, Square, Zap, GitBranch, Monitor } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, List, Square, Zap, GitBranch, Monitor, Play } from "lucide-react";
 import { NodesPanel } from "./NodesPanel";
 import { InboundActionsPanel } from "./InboundActionsPanel";
 import { OutboundActionsPanel } from "./OutboundActionsPanel";
@@ -76,6 +76,11 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50, variant = 'p
         return { label: (name || String(id ?? '')), color: 'gray', Icon: Square };
     }
   };
+
+  // Badge metadata helpers for boolean columns
+  const startBadgeMeta = (flag: boolean) => ({ label: flag ? 'Yes' : 'No', color: flag ? 'success' : 'gray', Icon: Play });
+  const endBadgeMeta = (flag: boolean) => ({ label: flag ? 'Yes' : 'No', color: flag ? 'error' : 'gray', Icon: Square });
+  const multipleBadgeMeta = (flag: boolean) => ({ label: flag ? 'Yes' : 'No', color: flag ? 'blue' : 'gray', Icon: List });
 
   const queryObj = useMemo(() => ({
     limit: pageSize,
@@ -266,9 +271,30 @@ export function ActivitiesPanel({ fixedProcessId, modalZIndex = 50, variant = 'p
                 </BadgeWithIcon>
               );
             } },
-          { key: "isStartActivity", header: "Start", render: (r: any) => (r.isStartActivity ? "Yes" : "No") },
-          { key: "isEndActivity", header: "End", render: (r: any) => (r.isEndActivity ? "Yes" : "No") },
-          { key: "haveMultipleItems", header: "Multiple", render: (r: any) => (r.haveMultipleItems ? "Yes" : "No") },
+          { key: "isStartActivity", header: "Start", render: (r: any) => {
+              const meta = startBadgeMeta(r.isStartActivity);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
+          { key: "isEndActivity", header: "End", render: (r: any) => {
+              const meta = endBadgeMeta(r.isEndActivity);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
+          { key: "haveMultipleItems", header: "Multiple", render: (r: any) => {
+              const meta = multipleBadgeMeta(r.haveMultipleItems);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           {
             key: "__actions__",
             header: "",

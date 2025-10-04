@@ -6,6 +6,8 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Checkbox as UICheckbox } from '../base/checkbox/checkbox';
+import { BadgeWithIcon } from '../base/badges/badges';
+import type { BadgeColors } from '../base/badges/badge-types';
 import { Plus, Pencil, Trash2, Check, X, List, GitBranch } from 'lucide-react';
 import { ActivitiesPanel } from './ActivitiesPanel';
 import { ProcessGraph } from './ProcessGraph';
@@ -43,6 +45,9 @@ export function ProcessesPanel({ variant = 'page', showToolbar = true, className
   const [editItem, setEditItem] = useState<ProcessItem | null>(null);
   const [activitiesProcess, setActivitiesProcess] = useState<ProcessItem | null>(null);
   const [graphProcess, setGraphProcess] = useState<ProcessItem | null>(null);
+
+  // Badge metadata for Sub-Process flag
+  const subBadgeMeta = (flag: boolean): { label: string; color: BadgeColors; Icon: any } => ({ label: flag ? 'Yes' : 'No', color: flag ? 'indigo' : 'gray', Icon: GitBranch });
 
   async function load() {
     setLoading(true);
@@ -129,7 +134,14 @@ export function ProcessesPanel({ variant = 'page', showToolbar = true, className
         columns={[
           { key: 'id', header: 'ID', width: 80, sortable: true },
           { key: 'name', header: 'Name', sortable: true },
-          { key: 'isSubProcess', header: 'Sub?', render: (r: any) => (r.isSubProcess ? 'Yes' : 'No') },
+          { key: 'isSubProcess', header: 'Sub?', render: (r: any) => {
+              const meta = subBadgeMeta(!!r.isSubProcess);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: 'staticId', header: 'StaticId' },
           {
             key: '__actions__',

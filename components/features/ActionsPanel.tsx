@@ -4,7 +4,8 @@ import { fetchJson, toDeepQuery } from "../../lib/api";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
 import { LookupModal } from "../ui/LookupModal";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { BadgeWithIcon } from "../base/badges/badges";
+import { Plus, Pencil, Trash2, Check, X, Database, FileCode } from "lucide-react";
 
 export interface ActionItem {
   id: number;
@@ -43,6 +44,18 @@ export function ActionsPanel({ variant = "page", showToolbar = true, className =
 
   const [showCreate, setShowCreate] = useState(false);
   const [editItem, setEditItem] = useState<ActionItem | null>(null);
+
+  // Map action type id/name to badge metadata (label, color, icon)
+  const actionTypeMeta = (id?: number, name?: string): { label: string; color: any; Icon: any } => {
+    switch (id) {
+      case 1:
+        return { label: 'SQL_ACTION', color: 'indigo', Icon: Database };
+      case 2:
+        return { label: 'SOURCE_ACTION', color: 'blue', Icon: FileCode };
+      default:
+        return { label: (name || String(id ?? '')), color: 'gray', Icon: FileCode };
+    }
+  };
 
   async function load() {
     setLoading(true);
@@ -153,7 +166,14 @@ export function ActionsPanel({ variant = "page", showToolbar = true, className =
         columns={[
           { key: 'id', header: 'ID', width: 80, sortable: true },
           { key: 'name', header: 'Name', sortable: true },
-          { key: 'actionType', header: 'Type', render: (r: any) => r.actionType?.name ?? r.actionTypeId },
+          { key: 'actionType', header: 'Type', render: (r: any) => {
+              const meta = actionTypeMeta(r.actionTypeId, r.actionType?.name);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: 'actionSource', header: 'Source' },
           { key: 'actionText', header: 'Text' },
           {

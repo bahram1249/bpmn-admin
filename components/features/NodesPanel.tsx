@@ -5,9 +5,10 @@ import { LookupModal } from "../ui/LookupModal";
 import { UntitledTable } from "../ui/UntitledTable";
 import { Button } from "../ui/Button";
 import { BadgeWithIcon } from "../base/badges/badges";
+import type { BadgeColors } from "../base/badges/badge-types";
 import { NodeConditionsPanel } from "./NodeConditionsPanel";
 import { NodeCommandsPanel } from "./NodeCommandsPanel";
-import { Plus, Pencil, Trash2, Check, X, ArrowRight, Shield, Building2, User } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ArrowRight, Shield, Building2, User, Repeat } from "lucide-react";
 
 export interface NodeItem {
   id: number;
@@ -81,6 +82,9 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50, variant = 'p
         return { label: (name || String(id ?? '')), color: 'gray', Icon: ArrowRight };
     }
   };
+
+  // Badge metadata for Auto flag
+  const autoBadgeMeta = (flag: boolean): { label: string; color: BadgeColors; Icon: any } => ({ label: flag ? 'Yes' : 'No', color: flag ? 'success' : 'gray', Icon: Repeat });
 
   const queryObj = useMemo(() => ({
     limit: pageSize,
@@ -230,7 +234,14 @@ export function NodesPanel({ fixedFromActivityId, modalZIndex = 50, variant = 'p
                 </BadgeWithIcon>
               );
             } },
-          { key: "autoIterate", header: "Auto", render: (r: any) => (r.autoIterate ? "Yes" : "No") },
+          { key: "autoIterate", header: "Auto", render: (r: any) => {
+              const meta = autoBadgeMeta(r.autoIterate);
+              return (
+                <BadgeWithIcon color={meta.color} iconLeading={meta.Icon}>
+                  {meta.label}
+                </BadgeWithIcon>
+              );
+            } },
           { key: "name", header: "Name", sortable: true },
           {
             key: "__actions__",
