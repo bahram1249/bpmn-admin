@@ -73,7 +73,7 @@ export function LookupModal<T = any>({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl ring-1 ring-gray-200 w-[min(900px,96vw)] max-h-[90vh] flex flex-col">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-900">{title}</h3>

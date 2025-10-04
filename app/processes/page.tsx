@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { fetchJson, toDeepQuery } from '../../lib/api';
 import { UntitledTable } from '../../components/ui/UntitledTable';
 import { Button } from '../../components/ui/Button';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, List } from 'lucide-react';
+import { ActivitiesPanel } from '../../components/features/ActivitiesPanel';
 
 interface ProcessItem {
   id: number;
@@ -29,6 +30,7 @@ export default function ProcessesPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editItem, setEditItem] = useState<ProcessItem | null>(null);
+  const [activitiesProcess, setActivitiesProcess] = useState<ProcessItem | null>(null);
 
   async function load() {
     setLoading(true);
@@ -121,6 +123,14 @@ export default function ProcessesPage() {
             render: (p: any) => (
               <div className="flex items-center justify-end gap-2">
                 <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<List size={16} />}
+                  onClick={() => setActivitiesProcess(p)}
+                >
+                  Activities
+                </Button>
+                <Button
                   aria-label="Edit"
                   title="Edit"
                   iconOnly
@@ -151,6 +161,22 @@ export default function ProcessesPage() {
         total={total}
         onPageChange={(p) => setPage(p)}
       />
+
+      {activitiesProcess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-[min(1100px,96vw)] max-h-[95vh] p-4 space-y-3 flex flex-col">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Activities for {activitiesProcess.name} (#{activitiesProcess.id})</h3>
+              <Button aria-label="Close" iconOnly variant="ghost" onClick={() => setActivitiesProcess(null)}>
+                <X size={16} />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <ActivitiesPanel fixedProcessId={activitiesProcess.id} modalZIndex={60} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {(showCreate || editItem) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
